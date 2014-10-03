@@ -8,21 +8,25 @@ if (count($argv) <= 1 || !file_exists($argv[1])) {
     die("Directory?.\n");
 }
 
-$fileList = implode(
-    ' ',
-    array_keys(
-        iterator_to_array(
-            new RegexIterator(
-                new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator(
-                        $argv[1]
-                    )
-                ),
-                '/\.php$/i'
+try {
+    $fileList = implode(
+        ' ',
+        array_keys(
+            iterator_to_array(
+                new RegexIterator(
+                    new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator(
+                            $argv[1]
+                        )
+                    ),
+                    '/\.php$/i'
+                )
             )
         )
-    )
-);
+    );
+} catch (Exception $e) {
+    die('Error: ' .  $e->getMessage() . "\n");
+}
 
 if ($fileList) {
     $result = '<h1>Style Check Report @ ' . date('Y-m-d H:i') . '</h1>';
@@ -34,14 +38,24 @@ if ($fileList) {
         $goodResult = array();
         foreach ($content as $line) {
             $line = str_replace($argv[1], '', $line);
-            if (strpos($line, 'not need formatting') === false) {
-                if (strpos($line, 'issues')) {
-                    $line = '<font color="red"><b>' . $line . '</b></font>';
-                }
-                $badResult[] = $line;
-            } else {
+            if (strpos($line, 'does not need formatting') !== false) {
                 $line = str_replace('does not need formatting', '', $line);
                 $goodResult[] = $line;
+            } else {
+                if (strpos($line, 'issues')) {
+                    $line = preg_replace(
+                        '/(.*)\sissues\:/i',
+                        '<font color="red"><b>$1</b></font>',
+                        $line
+                    );
+                } else {
+                    $line = preg_replace(
+                        '/(.*)\son\s(line\s[0-9]+.*)/i',
+                        '<b>$2</b>: $1',
+                        $line
+                    );
+                }
+                $badResult[] = $line;
             }
         }
 
