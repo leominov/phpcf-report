@@ -17,7 +17,8 @@ $fileList = implode(
                     new RecursiveDirectoryIterator(
                         $argv[1]
                     )
-                ), '/\.php$/i'
+                ),
+                '/\.php$/i'
             )
         )
     )
