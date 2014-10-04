@@ -9,6 +9,7 @@ const REGEX_ISSUE = '/(.*)\sissues\:/i';
 const REGEX_ERROR = '/(.*)\son\s(line\s[0-9]+.*)/i';
 
 $fileList = '';
+$argList = array();
 $badResult = array();
 
 if (count($argv) <= 1) {
@@ -18,6 +19,7 @@ if (count($argv) <= 1) {
 try {
     for ($argIdent = 1; $argIdent < count($argv); $argIdent++) {
         $resultList = '';
+        $argList[] = $argv[$argIdent];
         if (is_file($argv[$argIdent])
             && pathinfo($argv[$argIdent], PATHINFO_EXTENSION) == 'php') {
             $resultList = $argv[$argIdent];
@@ -94,7 +96,7 @@ $result = str_replace('{{date}}', date('Y-m-d @ H:i'), $result);
 if ($badResult) {
     $result = str_replace('{{list}}', implode('', $badResult), $result);
 } else {
-    $result = str_replace('{{list}}', '<p>Does not need formatting.</p>', $result);
+    $result = str_replace('{{list}}', '<h3>Does not need formatting</h3>' . implode('<br>', $argList), $result);
 }
 
 if (file_put_contents(REPORT_FILE, $result)) {
