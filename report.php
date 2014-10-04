@@ -19,6 +19,9 @@ if (count($argv) <= 1) {
 try {
     for ($argIdent = 1; $argIdent < count($argv); $argIdent++) {
         $resultList = '';
+        if (!file_exists($argv[$argIdent])) {
+            continue;
+        }
         $argList[] = $argv[$argIdent];
         if (is_file($argv[$argIdent])
             && pathinfo($argv[$argIdent], PATHINFO_EXTENSION) == 'php') {
