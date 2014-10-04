@@ -2,76 +2,103 @@
 <?php
 
 const REPORT_FILE = 'report.html';
+const REPORT_TEMPLATE_FILE = 'report.template.html';
 const PHPCF_PATH = '~/phpcf/phpcf';
 
-if (count($argv) <= 1 || !file_exists($argv[1])) {
-    die("Directory?.\n");
+const REGEX_ISSUE = '/(.*)\sissues\:/i';
+const REGEX_ERROR = '/(.*)\son\s(line\s[0-9]+.*)/i';
+
+$fileList = '';
+$badResult = array();
+
+if (count($argv) <= 1) {
+    die("Uh?.\n");
 }
 
 try {
-    $fileList = implode(
-        ' ',
-        array_keys(
-            iterator_to_array(
-                new RegexIterator(
-                    new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator(
-                            $argv[1]
-                        )
-                    ),
-                    '/\.php$/i'
+    for ($argIdent = 1; $argIdent < count($argv); $argIdent++) {
+        $resultList = '';
+        if (is_file($argv[$argIdent])
+            && pathinfo($argv[$argIdent], PATHINFO_EXTENSION) == 'php') {
+            $resultList = $argv[$argIdent];
+        } else {
+            $iterator = new RegexIterator(
+                new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator(
+                        $argv[$argIdent]
+                    )
+                ),
+                '/\.php$/i'
+            );
+            $resultList = implode(
+                ' ',
+                array_keys(
+                    iterator_to_array(
+                        $iterator
+                    )
                 )
-            )
-        )
-    );
+            );
+        }
+        if ($resultList) {
+            $fileList .= $resultList . ' ';
+        }
+    }
 } catch (Exception $e) {
     die('Error: ' .  $e->getMessage() . "\n");
 }
 
-if ($fileList) {
-    $result = '<h1>Style Check Report @ ' . date('Y-m-d H:i') . '</h1>';
-    exec(PHPCF_PATH . ' check ' . $fileList . ' > ' . REPORT_FILE);
-    $content = file(REPORT_FILE);
+if (!$fileList) {
+    die("Empty file list.\n");
+}
 
-    if ($content) {
-        $badResult = array();
-        $goodResult = array();
-        foreach ($content as $line) {
-            $line = str_replace($argv[1], '', $line);
-            if (strpos($line, 'does not need formatting') !== false) {
-                $line = str_replace('does not need formatting', '', $line);
-                $goodResult[] = $line;
-            } else {
-                if (strpos($line, 'issues')) {
-                    $line = preg_replace(
-                        '/(.*)\sissues\:/i',
-                        '<font color="red"><b>$1</b></font>',
-                        $line
-                    );
-                } else {
-                    $line = preg_replace(
-                        '/(.*)\son\s(line\s[0-9]+.*)/i',
-                        '<b>$2</b>: $1',
-                        $line
-                    );
-                }
-                $badResult[] = $line;
-            }
-        }
+exec(PHPCF_PATH . ' check ' . $fileList, $content);
 
-        if ($badResult) {
-            $result .= '<h2>Needs to be formatted</h2>';
-            $result .= implode('<br>', $badResult);
-        }
+if (!$content) {
+    die("Error running PHPCF.\n");
+}
 
-        if ($goodResult) {
-            $result .= '<h2>Not need formatting</h2>';
-            $result .= implode('<br>', $goodResult);
-        }
-
-        file_put_contents(
-            REPORT_FILE,
-            $result
-        );
+$isOpenTag = false;
+foreach ($content as $line) {
+    if (strpos($line, 'does not need formatting') !== false || !$line) {
+        continue;
     }
+
+    if (preg_match(REGEX_ISSUE, $line)) {
+        $line = preg_replace(
+            REGEX_ISSUE,
+            ($isOpenTag ? '</table></p>' : '') . '<p style="font-size: 16px"><code>$1</code></p><p><table class="table">',
+            $line
+        );
+        $isOpenTag = true;
+    } else if (preg_match(REGEX_ERROR, $line)) {
+        $line = preg_replace(
+            REGEX_ERROR,
+            '<tr><td style="width: 20%;"><kbd>$2</kbd></td><td>$1</td></tr>',
+            $line
+        );
+    } else {
+        $line = '<tr><td></td><td>' . $line . '</td></tr>';
+    }
+
+    $badResult[] = $line;
+}
+
+$result = file_get_contents(REPORT_TEMPLATE_FILE);
+
+if (!$result) {
+    die("Template not found.\n");
+}
+
+$result = str_replace('{{date}}', date('Y-m-d @ H:i'), $result);
+
+if ($badResult) {
+    $result = str_replace('{{list}}', implode('', $badResult), $result);
+} else {
+    $result = str_replace('{{list}}', '<p>Does not need formatting.</p>', $result);
+}
+
+if (file_put_contents(REPORT_FILE, $result)) {
+    die("Done.\n");
+} else {
+    die("Cant save report file.\n");
 }
