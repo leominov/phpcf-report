@@ -49,7 +49,7 @@ try {
         }
     }
 } catch (Exception $e) {
-    die('Error: ' .  $e->getMessage() . "\n");
+    die('Error: ' . $e->getMessage() . "\n");
 }
 
 if (!$fileList) {
