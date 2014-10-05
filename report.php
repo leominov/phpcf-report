@@ -88,7 +88,7 @@ foreach ($content as $line) {
     $badResult[] = $line;
 }
 
-$result = file_get_contents(REPORT_TEMPLATE_FILE);
+$result = file_get_contents(__DIR__ . '/' . REPORT_TEMPLATE_FILE);
 
 if (!$result) {
     die("Template not found.\n");
