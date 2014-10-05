@@ -1,12 +1,12 @@
 #!/usr/bin/env php
 <?php
 
-const REPORT_FILE = 'report.html';
-const REPORT_TEMPLATE_FILE = 'report.template.html';
-const PHPCF_PATH = '~/phpcf/phpcf';
+define('REPORT_FILE', 'report.html');
+define('REPORT_TEMPLATE_FILE', __DIR__ . '/report.template.html');
+define('PHPCF_PATH', '~/phpcf/phpcf');
 
-const REGEX_ISSUE = '/(.*)\sissues\:/i';
-const REGEX_ERROR = '/(.*)\son\s(line\s[0-9]+.*)/i';
+define('REGEX_ISSUE', '/(.*)\sissues\:/i');
+define('REGEX_ERROR', '/(.*)\son\s(line\s[0-9]+.*)/i');
 
 $fileList = '';
 $argList = array();
@@ -88,7 +88,7 @@ foreach ($content as $line) {
     $badResult[] = $line;
 }
 
-$result = file_get_contents(__DIR__ . '/' . REPORT_TEMPLATE_FILE);
+$result = file_get_contents(REPORT_TEMPLATE_FILE);
 
 if (!$result) {
     die("Template not found.\n");
